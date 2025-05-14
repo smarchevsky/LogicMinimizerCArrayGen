@@ -70,11 +70,18 @@
 #define LOG(x) std::cout << x << std::endl;
 #define ARR_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
-#define GENERATE_TEXT_FOR_ESPRESSO 0
-#define GENERATE_ARRAYS_FROM_ESPRESSO_OUT 1
-#define TEST_MINIMIZED_FUNCTION 2
+void testMinimizedFunction();
+void printLogicMinArray();
+void generateDataForEspressoMinimizer();
 
-#define WHAT_ARE_WE_DOING 2
+int main()
+{
+    generateDataForEspressoMinimizer();
+    // printLogicMinArray();
+    // testMinimizedFunction();
+
+    return 0;
+}
 
 uint8_t minimizedFunction(uint8_t inBits)
 {
@@ -264,21 +271,4 @@ void printLogicMinArray()
     LOG(maskStream0.str());
     LOG(dataStream1.str());
     LOG(maskStream1.str());
-}
-
-int main()
-{
-#define GENERATE_TEXT_FOR_ESPRESSO 0
-#define GENERATE_ARRAYS_FROM_ESPRESSO_OUT 1
-#define TEST_MINIMIZED_FUNCTION 2
-
-#if (WHAT_ARE_WE_DOING == GENERATE_TEXT_FOR_ESPRESSO)
-    generateDataForEspressoMinimizer();
-#elif (WHAT_ARE_WE_DOING == GENERATE_ARRAYS_FROM_ESPRESSO_OUT)
-    printLogicMinArray();
-#elif (WHAT_ARE_WE_DOING == TEST_MINIMIZED_FUNCTION)
-    testMinimizedFunction();
-#endif
-
-    return 0;
 }
