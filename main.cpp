@@ -148,7 +148,7 @@ void testMinimizedFunction()
     bool everythingIsFine = true;
     for (int i = 0; i < 256; ++i) {
         auto sourceResult = sourceFunction(i);
-        auto minimizedResult = sourceFunction(i);
+        auto minimizedResult = minimizedFunction(i);
         if (sourceResult != minimizedResult) {
             printf("For %.8b source: %b, minimized: %b\n",
                 i, sourceResult, minimizedResult);
