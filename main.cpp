@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bitset>
 #include <cstdint>
 #include <iomanip>
@@ -76,8 +77,9 @@ void generateDataForEspressoMinimizer();
 
 int main()
 {
-    generateDataForEspressoMinimizer();
-    // printLogicMinArray();
+
+    // generateDataForEspressoMinimizer();
+    printLogicMinArray();
     // testMinimizedFunction();
 
     return 0;
@@ -85,16 +87,15 @@ int main()
 
 uint8_t minimizedFunction(uint8_t inBits)
 {
-    uint8_t data0[] = { 0x60, 0x0F, 0x17, 0x43, 0x0E, 0x20, 0x10, 0x48, 0x44, 0x20, 0x48, 0x18, 0x10 };
-    uint8_t mask0[] = { 0xFF, 0xDF, 0xB7, 0xF7, 0xEE, 0xEB, 0xD7, 0xEB, 0xFC, 0xEC, 0xEC, 0xB8, 0xD8 };
-    uint8_t data1[] = { 0x60, 0x80, 0x4D, 0x0E, 0x40, 0x40, 0x80, 0x80, 0x25, 0x26, 0x10, 0x10, 0x28, 0x50, 0x10 };
-    uint8_t mask1[] = { 0xFF, 0xF3, 0xED, 0xBE, 0xED, 0xEE, 0xF8, 0xF4, 0xE5, 0xE6, 0xB5, 0xB6, 0xE8, 0xF0, 0xD8 };
+    uint16_t data0[] = { 0xFF60, 0xDF0F, 0xB717, 0xF743, 0xEE0E, 0xEB20, 0xD710, 0xEB48, 0xFC44, 0xEC20, 0xEC48, 0xB818, 0xD810 };
+    uint16_t data1[] = { 0xFF60, 0xF380, 0xED4D, 0xBE0E, 0xED40, 0xEE40, 0xF880, 0xF480, 0xE525, 0xE626, 0xB510, 0xB610, 0xE828, 0xF050, 0xD810 };
 
     uint8_t out = 0;
 
     // least bit calculation
     for (int i = 0; i < ARR_SIZE(data0); ++i) {
-        if (((inBits ^ data0[i]) & mask0[i]) == 0) {
+        uint16_t d = data0[i];
+        if (((inBits ^ (d & 0xFF)) & (d >> 8)) == 0) {
             out |= 1;
             break;
         }
@@ -102,7 +103,8 @@ uint8_t minimizedFunction(uint8_t inBits)
 
     // second bit calculation
     for (int i = 0; i < ARR_SIZE(data1); ++i) {
-        if (((inBits ^ data1[i]) & mask1[i]) == 0) {
+        uint16_t d = data1[i];
+        if (((inBits ^ (d & 0xFF)) & (d >> 8)) == 0) {
             out |= 2;
             break;
         }
@@ -157,7 +159,7 @@ void testMinimizedFunction()
         auto sourceResult = sourceFunction(i);
         auto minimizedResult = minimizedFunction(i);
         if (sourceResult != minimizedResult) {
-            printf("For %.8b source: %b, minimized: %b\n",
+            printf("For %.8b source: %.2b, minimized: %.2b\n",
                 i, sourceResult, minimizedResult);
             everythingIsFine = false;
         }
@@ -211,33 +213,33 @@ void printLogicMinArray()
 
     std::string readingLine;
 
-    auto doStuff = [](std::ostringstream& dataStream, std::ostringstream& maskStream,
+    auto doStuff = [](std::ostringstream& dataStream,
                        const std::string& readingLine) {
-        std::string dataLine, maskLine;
+        static std::string dataLine, maskLine;
 
-        for (int i = 0; i < 8; ++i) {
-            dataLine += readingLine[i] == '-' ? '0' : readingLine[i];
-            maskLine += readingLine[i] == '-' ? '0' : '1';
-        }
+        dataLine = readingLine;
+        std::replace(dataLine.begin(), dataLine.end(), '-', '0');
+
+        maskLine = readingLine;
+        std::replace(maskLine.begin(), maskLine.end(), '0', '1');
+        std::replace(maskLine.begin(), maskLine.end(), '-', '0');
 
         std::bitset<8> dataBits(dataLine);
         std::bitset<8> maskBits(maskLine);
 
-        dataStream << "0x" << std::setw(2) << std::setfill('0') << dataBits.to_ulong();
-        maskStream << "0x" << std::setw(2) << maskBits.to_ulong();
+        dataStream << "0x"
+                   << std::setfill('0') << std::setw(2) << maskBits.to_ulong()
+                   << std::setfill('0') << std::setw(2) << dataBits.to_ulong();
     };
 
-    std::ostringstream dataStream0, maskStream0, dataStream1, maskStream1;
-    dataStream0 << std::uppercase << std::setfill('0') << std::hex;
-    maskStream0 << std::uppercase << std::setfill('0') << std::hex;
-    dataStream1 << std::uppercase << std::setfill('0') << std::hex;
-    maskStream1 << std::uppercase << std::setfill('0') << std::hex;
+    std::ostringstream dataStream0, dataStream1;
+    dataStream0 << std::uppercase << std::hex;
+    dataStream1 << std::uppercase << std::hex;
 
     bool first0 = true, first1 = true;
-    dataStream0 << "uint8_t data0[] = { ";
-    maskStream0 << "uint8_t mask0[] = { ";
-    dataStream1 << "uint8_t data1[] = { ";
-    maskStream1 << "uint8_t mask1[] = { ";
+    dataStream0 << "uint16_t data0[] = { ";
+    dataStream1 << "uint16_t data1[] = { ";
+
     while (std::getline(espressoOutStream, readingLine)) {
         if (readingLine.size() != (8 + 1 + 2))
             continue;
@@ -246,9 +248,8 @@ void printLogicMinArray()
                 first0 = false;
             } else {
                 dataStream0 << ", ";
-                maskStream0 << ", ";
             }
-            doStuff(dataStream0, maskStream0, readingLine);
+            doStuff(dataStream0, readingLine);
         }
 
         if (readingLine[9] == '1') {
@@ -256,19 +257,14 @@ void printLogicMinArray()
                 first1 = false;
             } else {
                 dataStream1 << ", ";
-                maskStream1 << ", ";
             }
-            doStuff(dataStream1, maskStream1, readingLine);
+            doStuff(dataStream1, readingLine);
         }
     }
 
     dataStream0 << " };";
-    maskStream0 << " };";
     dataStream1 << " };";
-    maskStream1 << " };";
 
     LOG(dataStream0.str());
-    LOG(maskStream0.str());
     LOG(dataStream1.str());
-    LOG(maskStream1.str());
 }
